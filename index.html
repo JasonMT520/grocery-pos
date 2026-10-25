@@ -3,35 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>雜貨店收銀系統 POS</title>
-  <!-- 引入 Tailwind CSS 快速美化介面 -->
+  <title>雜貨店收銀系統 POS v2.0</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 h-screen flex flex-col font-sans select-none">
 
-  <!-- 頂部金流狀態列：隨時掌握抽屜裡應該要有多少現金 -->
+  <!-- 頂部金流狀態列 -->
   <header class="bg-slate-800 text-white px-6 py-3 flex justify-between items-center shadow-md">
     <div class="flex items-center gap-4">
-      <h1 class="text-2xl font-bold tracking-wider text-yellow-400">阿公阿嬤雜貨店 POS</h1>
-      <span class="bg-emerald-600 px-3 py-1 rounded-full text-sm font-semibold">刷槍待命中</span>
+      <h1 class="text-2xl font-bold tracking-wider text-yellow-400">雜貨店收銀系統 v2</h1>
+      <button onclick="openProductModal()" class="bg-slate-700 hover:bg-slate-600 border border-slate-500 px-3 py-1.5 rounded-lg text-base font-bold">
+        📦 商品管理 / 改價
+      </button>
+      <button onclick="openHistoryModal()" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-base font-bold shadow">
+        📋 今日帳務明細 / 作廢
+      </button>
     </div>
-    <div class="flex gap-6 text-lg">
-      <div>開店準備金: <span id="openingCash" class="font-bold text-slate-200">$5000</span></div>
-      <div>今日現金營收: <span id="todaySales" class="font-bold text-emerald-400">$0</span></div>
-      <div>櫃檯付貨款支出: <span id="todayExpense" class="font-bold text-rose-400">$0</span></div>
-      <div class="bg-slate-700 px-4 py-1 rounded-lg border border-yellow-500">
+
+    <div class="flex items-center gap-5 text-lg">
+      <div class="cursor-pointer hover:underline" onclick="setOpeningCash()" title="點擊修改準備金">
+        準備金: <span id="openingCash" class="font-bold text-slate-200">$5000</span> ✎
+      </div>
+      <div>今日營收: <span id="todaySales" class="font-bold text-emerald-400">$0</span></div>
+      <div>付貨款支出: <span id="todayExpense" class="font-bold text-rose-400">$0</span></div>
+      <div class="bg-slate-900 px-4 py-1.5 rounded-xl border-2 border-yellow-400">
         抽屜應有現金: <span id="expectedCash" class="font-extrabold text-yellow-300 text-2xl">$5000</span>
       </div>
     </div>
   </header>
 
-  <!-- 主畫面：左邊結帳清單，右邊長輩專用大按鈕 -->
+  <!-- 主畫面 -->
   <main class="flex-1 flex overflow-hidden p-4 gap-4">
     
     <!-- 左半部：刷槍輸入區 + 購物車明細 + 結帳區 -->
     <section class="w-7/12 bg-white rounded-2xl shadow-lg flex flex-col p-5 border border-slate-200">
-      <!-- 刷槍輸入框（隨時保持自動聚焦） -->
-      <div class="flex gap-3 mb-4">
+      <div class="flex gap-3 mb-3">
         <input 
           id="barcodeInput" 
           type="text" 
@@ -42,7 +48,7 @@
       </div>
 
       <!-- 購物清單表格 -->
-      <div class="flex-1 overflow-y-auto border-t border-b border-slate-200 my-2">
+      <div class="flex-1 overflow-y-auto border-t border-b border-slate-200 my-1">
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="border-b-2 border-slate-300 text-slate-500 text-lg">
@@ -50,27 +56,25 @@
               <th class="py-2 text-center">單價</th>
               <th class="py-2 text-center">數量</th>
               <th class="py-2 text-right">小計</th>
-              <th class="py-2 text-center">刪除</th>
+              <th class="py-2 text-center">操作</th>
             </tr>
           </thead>
-          <tbody id="cartBody" class="text-2xl font-bold divide-y divide-slate-200">
-            <!-- 商品會動態加入這裡 -->
-          </tbody>
+          <tbody id="cartBody" class="text-2xl font-bold divide-y divide-slate-200"></tbody>
         </table>
       </div>
 
-      <!-- 底部總金額與快速找零 -->
+      <!-- 底部總金額與結帳按鈕 -->
       <div class="pt-3 flex justify-between items-center">
         <div>
-          <div class="text-slate-500 text-lg">應收總金額</div>
+          <div class="text-slate-500 text-lg font-bold">應收總金額</div>
           <div class="text-6xl font-black text-rose-600">$<span id="totalAmount">0</span></div>
         </div>
         <div class="flex gap-3">
           <button onclick="clearCart()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-2xl px-6 py-5 rounded-xl">
             清空重算
           </button>
-          <button onclick="checkout()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-3xl px-10 py-5 rounded-xl shadow-lg">
-            收現結帳 (空白鍵)
+          <button onclick="openCheckoutModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-3xl px-10 py-5 rounded-xl shadow-lg">
+            結帳找零 (空白鍵)
           </button>
         </div>
       </div>
@@ -80,59 +84,167 @@
     <section class="w-5/12 flex flex-col gap-4">
       <div class="bg-white rounded-2xl shadow-lg p-5 flex-1 border border-slate-200 flex flex-col">
         <h2 class="text-xl font-bold text-slate-700 mb-3">無條碼散裝商品（直接點選或刷桌墊）</h2>
-        <div class="grid grid-cols-2 gap-4 flex-1">
-          <button onclick="addQuickItem('散裝雞蛋(1顆)', 7)" class="bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 rounded-xl p-4 flex flex-col justify-center items-center">
+        <div class="grid grid-cols-2 gap-3 flex-1">
+          <button onclick="addQuickItem('散裝雞蛋(1顆)', 7)" class="bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 rounded-xl p-3 flex flex-col justify-center items-center">
             <span class="text-3xl font-black text-amber-900">散裝雞蛋</span>
-            <span class="text-xl font-bold text-amber-700 mt-1">$7 / 顆 (條碼:1001)</span>
+            <span class="text-lg font-bold text-amber-700 mt-1">$7 / 顆 (條碼:1001)</span>
           </button>
-          <button onclick="addQuickItem('塑膠袋', 2)" class="bg-blue-100 hover:bg-blue-200 border-2 border-blue-400 rounded-xl p-4 flex flex-col justify-center items-center">
+          <button onclick="addQuickItem('購物塑膠袋', 2)" class="bg-blue-100 hover:bg-blue-200 border-2 border-blue-400 rounded-xl p-3 flex flex-col justify-center items-center">
             <span class="text-3xl font-black text-blue-900">購物塑膠袋</span>
-            <span class="text-xl font-bold text-blue-700 mt-1">$2 / 個 (條碼:1002)</span>
+            <span class="text-lg font-bold text-blue-700 mt-1">$2 / 個 (條碼:1002)</span>
           </button>
-          <button onclick="addQuickItem('退米酒空瓶', -5)" class="bg-teal-100 hover:bg-teal-200 border-2 border-teal-400 rounded-xl p-4 flex flex-col justify-center items-center">
+          <button onclick="addQuickItem('退米酒空瓶', -5)" class="bg-teal-100 hover:bg-teal-200 border-2 border-teal-400 rounded-xl p-3 flex flex-col justify-center items-center">
             <span class="text-3xl font-black text-teal-900">退米酒空瓶</span>
-            <span class="text-xl font-bold text-teal-700 mt-1">扣 $5 元 (條碼:1003)</span>
+            <span class="text-lg font-bold text-teal-700 mt-1">扣 $5 元 (條碼:1003)</span>
           </button>
-          <button onclick="addCustomPriceItem()" class="bg-purple-100 hover:bg-purple-200 border-2 border-purple-400 rounded-xl p-4 flex flex-col justify-center items-center">
-            <span class="text-3xl font-black text-purple-900">秤重 / 自訂金額</span>
-            <span class="text-xl font-bold text-purple-700 mt-1">手動輸入價格</span>
+          <button onclick="addQuickItem('散裝白米(1斤)', 28)" class="bg-orange-100 hover:bg-orange-200 border-2 border-orange-400 rounded-xl p-3 flex flex-col justify-center items-center">
+            <span class="text-3xl font-black text-orange-900">散裝白米</span>
+            <span class="text-lg font-bold text-orange-700 mt-1">$28 / 斤 (條碼:1004)</span>
+          </button>
+          <button onclick="addCustomPriceItem('散裝菜/蒜頭/薑')" class="bg-lime-100 hover:bg-lime-200 border-2 border-lime-500 rounded-xl p-3 flex flex-col justify-center items-center">
+            <span class="text-3xl font-black text-lime-900">蒜頭 / 老薑 / 菜</span>
+            <span class="text-lg font-bold text-lime-700 mt-1">點選輸入秤重金額</span>
+          </button>
+          <button onclick="addCustomPriceItem('自訂金額商品')" class="bg-purple-100 hover:bg-purple-200 border-2 border-purple-400 rounded-xl p-3 flex flex-col justify-center items-center">
+            <span class="text-3xl font-black text-purple-900">萬用自訂金額</span>
+            <span class="text-lg font-bold text-purple-700 mt-1">手動輸入價格 (條碼:9999)</span>
           </button>
         </div>
       </div>
 
-      <!-- 雜貨店關鍵金流：櫃檯現金支出登記 -->
+      <!-- 櫃檯現金支出登記 -->
       <div class="bg-rose-50 rounded-2xl shadow-lg p-5 border-2 border-rose-200">
-        <h2 class="text-xl font-bold text-rose-800 mb-2">櫃檯現金支出（廠商送貨付現）</h2>
+        <h2 class="text-xl font-bold text-rose-800 mb-2">櫃檯現金支出（廠商送貨付現 / 臨時支出）</h2>
         <button onclick="recordExpense()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black text-2xl py-4 rounded-xl shadow">
-          登記從抽屜拿錢付貨款
+          💸 登記從抽屜拿錢付貨款
         </button>
       </div>
     </section>
-
   </main>
 
+  <!-- 視窗 1：快速找零結帳視窗 -->
+  <div id="checkoutModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-white rounded-3xl p-8 w-[600px] shadow-2xl border-4 border-emerald-500">
+      <h3 class="text-3xl font-black text-slate-800 mb-4">收銀找零計算</h3>
+      <div class="flex justify-between items-center bg-slate-100 p-4 rounded-2xl mb-4">
+        <span class="text-2xl font-bold text-slate-600">應收總金額：</span>
+        <span class="text-5xl font-black text-rose-600">$<span id="modalTotal">0</span></span>
+      </div>
+
+      <div class="mb-4">
+        <div class="text-xl font-bold text-slate-600 mb-2">客人付多少錢？（點選自動算找零）：</div>
+        <div class="grid grid-cols-4 gap-3 mb-3">
+          <button onclick="setReceivedCash('exact')" class="bg-emerald-100 hover:bg-emerald-200 border-2 border-emerald-500 text-emerald-900 font-black text-2xl py-4 rounded-xl">剛好</button>
+          <button onclick="setReceivedCash(100)" class="bg-blue-100 hover:bg-blue-200 border-2 border-blue-400 text-blue-900 font-black text-3xl py-4 rounded-xl">$100</button>
+          <button onclick="setReceivedCash(500)" class="bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-900 font-black text-3xl py-4 rounded-xl">$500</button>
+          <button onclick="setReceivedCash(1000)" class="bg-purple-100 hover:bg-purple-200 border-2 border-purple-400 text-purple-900 font-black text-3xl py-4 rounded-xl">$1000</button>
+        </div>
+        <input id="receivedInput" type="number" oninput="calculateChange()" placeholder="或手動輸入客人給的金額..." class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-2xl font-bold" />
+      </div>
+
+      <div class="flex justify-between items-center bg-yellow-50 border-2 border-yellow-400 p-4 rounded-2xl mb-6">
+        <span class="text-2xl font-bold text-slate-700">應找零錢：</span>
+        <span id="changeAmount" class="text-6xl font-black text-emerald-700">$0</span>
+      </div>
+
+      <div class="flex gap-4">
+        <button onclick="closeCheckoutModal()" class="w-1/3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-2xl py-4 rounded-xl">返回修改</button>
+        <button onclick="confirmCheckout()" class="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-3xl py-4 rounded-xl shadow-lg">確認收錢入帳 (Enter)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 視窗 2：今日金流流水帳明細 -->
+  <div id="historyModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-white rounded-3xl p-6 w-[800px] max-h-[85vh] flex flex-col shadow-2xl">
+      <div class="flex justify-between items-center border-b pb-4 mb-4">
+        <h3 class="text-2xl font-black text-slate-800">📋 今日交易與櫃檯支出明細</h3>
+        <button onclick="closeHistoryModal()" class="bg-slate-200 px-4 py-2 rounded-lg font-bold text-lg">關閉視窗</button>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b-2 border-slate-300 text-slate-500 text-lg">
+              <th class="py-2">時間</th>
+              <th class="py-2">類型</th>
+              <th class="py-2">內容明細 / 廠商備註</th>
+              <th class="py-2 text-right">金額</th>
+              <th class="py-2 text-center">操作</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody" class="text-xl font-bold divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 視窗 3：商品建檔管理與改價 -->
+  <div id="productModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-white rounded-3xl p-6 w-[750px] max-h-[85vh] flex flex-col shadow-2xl">
+      <div class="flex justify-between items-center border-b pb-4 mb-4">
+        <h3 class="text-2xl font-black text-slate-800">📦 已建檔商品管理（可直接修改售價）</h3>
+        <button onclick="closeProductModal()" class="bg-slate-200 px-4 py-2 rounded-lg font-bold text-lg">關閉視窗</button>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b-2 border-slate-300 text-slate-500 text-lg">
+              <th class="py-2">條碼</th>
+              <th class="py-2">商品名稱</th>
+              <th class="py-2">售價</th>
+              <th class="py-2 text-center">操作</th>
+            </tr>
+          </thead>
+          <tbody id="productBody" class="text-xl font-bold divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // 預設商品資料庫（優先從瀏覽器 localStorage 讀取）
+    // 1. 內建音效合成器（免外接音檔，直接發出刷槍嗶聲）
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 1200, duration = 0.08, type = 'sine') {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.value = 0.2;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    // 2. 初始資料載入
     const defaultProducts = {
       "1001": { name: "散裝雞蛋(1顆)", price: 7 },
-      "1002": { name: "塑膠袋", price: 2 },
+      "1002": { name: "購物塑膠袋", price: 2 },
       "1003": { name: "退米酒空瓶", price: -5 },
+      "1004": { name: "散裝白米(1斤)", price: 28 },
       "4710018000102": { name: "可口可樂 600ml", price: 29 },
       "4710088410006": { name: "維力炸醬麵(碗)", price: 25 }
     };
 
     let products = JSON.parse(localStorage.getItem('pos_products')) || defaultProducts;
+    let transactions = JSON.parse(localStorage.getItem('pos_transactions')) || [];
+    let openingCash = Number(localStorage.getItem('pos_openingCash')) || 5000;
     let cart = [];
-    let openingCash = 5000;
-    let todaySales = Number(localStorage.getItem('pos_todaySales')) || 0;
-    let todayExpense = Number(localStorage.getItem('pos_todayExpense')) || 0;
 
     const barcodeInput = document.getElementById('barcodeInput');
 
-    // 確保游標隨時停留在刷槍輸入框，老人家不用點滑鼠就能一直刷
-    document.addEventListener('click', () => barcodeInput.focus());
+    // 確保在主畫面時，游標自動回到刷槍輸入框
+    document.addEventListener('click', (e) => {
+      const isModalOpen = !document.getElementById('checkoutModal').classList.contains('hidden') ||
+                          !document.getElementById('historyModal').classList.contains('hidden') ||
+                          !document.getElementById('productModal').classList.contains('hidden');
+      if (!isModalOpen && e.target.tagName !== 'INPUT') {
+        barcodeInput.focus();
+      }
+    });
 
-    // 監聽刷槍輸入（刷槍掃完條碼會自動送出 Enter）
+    // 監聽刷槍與鍵盤快捷鍵
     barcodeInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -140,31 +252,40 @@
         barcodeInput.value = '';
         if (code) handleBarcode(code);
       } else if (e.key === ' ' && barcodeInput.value === '') {
-        // 按空白鍵快速結帳
         e.preventDefault();
-        checkout();
+        openCheckoutModal();
       }
     });
 
-    // 處理刷到的條碼（若沒建檔過，直接跳出邊賣邊建檔視窗）
+    // 處理刷到的條碼
     function handleBarcode(code) {
+      if (code === '9999') {
+        playBeep(1000, 0.1);
+        addCustomPriceItem('自訂金額商品');
+        return;
+      }
       if (products[code]) {
+        playBeep(1400, 0.08); // 成功高音嗶聲
         addQuickItem(products[code].name, products[code].price);
       } else {
-        const name = prompt(`發現新商品條碼 [${code}]！\n請輸入商品名稱（直接建檔）：`);
-        if (!name) return;
-        const price = Number(prompt(`請輸入「${name}」的售價（元）：`));
-        if (isNaN(price)) return;
+        playBeep(350, 0.25, 'square'); // 未知商品低音提示
+        setTimeout(() => {
+          const name = prompt(`發現新商品條碼 [${code}]！\n請輸入商品名稱（輸入完直接建檔並入單）：`);
+          if (!name) return;
+          const price = Number(prompt(`請輸入「${name}」的售價（元）：`));
+          if (isNaN(price)) return;
 
-        // 存入商品資料庫並直接加入購物車
-        products[code] = { name, price };
-        localStorage.setItem('pos_products', JSON.stringify(products));
-        addQuickItem(name, price);
+          products[code] = { name, price };
+          localStorage.setItem('pos_products', JSON.stringify(products));
+          playBeep(1400, 0.08);
+          addQuickItem(name, price);
+        }, 50);
       }
     }
 
-    // 加入商品到購物車
+    // 加入購物車與增減數量
     function addQuickItem(name, price) {
+      playBeep(1400, 0.06);
       const existing = cart.find(item => item.name === name && item.price === price);
       if (existing) {
         existing.qty += 1;
@@ -175,71 +296,207 @@
       barcodeInput.focus();
     }
 
-    // 秤重或自訂金額商品
-    function addCustomPriceItem() {
-      const price = Number(prompt("請輸入此筆散裝商品金額（元）："));
+    function changeQty(index, delta) {
+      cart[index].qty += delta;
+      if (cart[index].qty <= 0) cart.splice(index, 1);
+      renderCart();
+    }
+
+    function addCustomPriceItem(defaultLabel) {
+      const price = Number(prompt(`請輸入「${defaultLabel}」的總金額（元）：`));
       if (!isNaN(price) && price !== 0) {
-        addQuickItem("散裝自訂商品", price);
+        addQuickItem(defaultLabel, price);
       }
       barcodeInput.focus();
     }
 
-    // 刪除單筆商品
-    function removeItem(index) {
-      cart.splice(index, 1);
-      renderCart();
-    }
-
-    // 清空購物車
     function clearCart() {
       cart = [];
       renderCart();
       barcodeInput.focus();
     }
 
-    // 結帳入帳
-    function checkout() {
-      const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    // 結帳與找零視窗邏輯
+    function getCartTotal() {
+      return cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    }
+
+    function openCheckoutModal() {
       if (cart.length === 0) return;
-      todaySales += total;
-      localStorage.setItem('pos_todaySales', todaySales);
-      cart = [];
-      renderCart();
-      updateHeaderCash();
+      const total = getCartTotal();
+      document.getElementById('modalTotal').innerText = total;
+      document.getElementById('receivedInput').value = total;
+      document.getElementById('changeAmount').innerText = '$0';
+      document.getElementById('checkoutModal').classList.remove('hidden');
+      document.getElementById('receivedInput').focus();
+      document.getElementById('receivedInput').select();
+    }
+
+    function closeCheckoutModal() {
+      document.getElementById('checkoutModal').classList.add('hidden');
       barcodeInput.focus();
     }
 
-    // 登記櫃檯付給廠商的貨款支出
+    function setReceivedCash(amount) {
+      const total = getCartTotal();
+      document.getElementById('receivedInput').value = amount === 'exact' ? total : amount;
+      calculateChange();
+    }
+
+    function calculateChange() {
+      const total = getCartTotal();
+      const received = Number(document.getElementById('receivedInput').value) || 0;
+      const change = received - total;
+      document.getElementById('changeAmount').innerText = change >= 0 ? `$${change}` : `還差 $${Math.abs(change)}`;
+    }
+
+    function confirmCheckout() {
+      const total = getCartTotal();
+      const summary = cart.map(i => `${i.name}x${i.qty}`).join(', ');
+      transactions.unshift({
+        id: Date.now(),
+        time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+        type: 'sale',
+        note: summary,
+        amount: total
+      });
+      localStorage.setItem('pos_transactions', JSON.stringify(transactions));
+      playBeep(1600, 0.15);
+      cart = [];
+      renderCart();
+      updateHeaderCash();
+      closeCheckoutModal();
+    }
+
+    // 支援在找零視窗直接按 Enter 完成結帳
+    document.getElementById('receivedInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') confirmCheckout();
+      if (e.key === 'Escape') closeCheckoutModal();
+    });
+
+    // 登記櫃檯付貨款支出
     function recordExpense() {
-      const amount = Number(prompt("請輸入從抽屜拿給廠商的貨款金額（元）："));
+      const note = prompt("請輸入支出原因或廠商名稱（例如：雞蛋商貨款、買便當）：");
+      if (!note) return;
+      const amount = Number(prompt(`請輸入從抽屜拿給「${note}」的現金金額（元）：`));
       if (!isNaN(amount) && amount > 0) {
-        todayExpense += amount;
-        localStorage.setItem('pos_todayExpense', todayExpense);
+        transactions.unshift({
+          id: Date.now(),
+          time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+          type: 'expense',
+          note: note,
+          amount: amount
+        });
+        localStorage.setItem('pos_transactions', JSON.stringify(transactions));
         updateHeaderCash();
       }
       barcodeInput.focus();
     }
 
-    // 更新畫面
+    // 修改開店準備金
+    function setOpeningCash() {
+      const val = Number(prompt("請輸入今日開店抽屜準備金（元）：", openingCash));
+      if (!isNaN(val) && val >= 0) {
+        openingCash = val;
+        localStorage.setItem('pos_openingCash', openingCash);
+        updateHeaderCash();
+      }
+    }
+
+    // 歷史明細與單筆作廢
+    function openHistoryModal() {
+      const tbody = document.getElementById('historyBody');
+      tbody.innerHTML = transactions.map((t, idx) => `
+        <tr class="${t.type === 'expense' ? 'bg-rose-50' : ''}">
+          <td class="py-3 text-slate-500">${t.time}</td>
+          <td class="py-3">
+            <span class="px-2 py-1 rounded text-base ${t.type === 'sale' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-200 text-rose-900'}">
+              ${t.type === 'sale' ? '收銀入帳' : '付貨款支出'}
+            </span>
+          </td>
+          <td class="py-3">${t.note}</td>
+          <td class="py-3 text-right ${t.type === 'sale' ? 'text-emerald-600' : 'text-rose-600'}">
+            ${t.type === 'sale' ? '+' : '-'}$${t.amount}
+          </td>
+          <td class="py-3 text-center">
+            <button onclick="deleteTransaction(${idx})" class="bg-slate-200 hover:bg-red-500 hover:text-white text-slate-700 px-3 py-1 rounded-lg text-base">作廢刪單</button>
+          </td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" class="py-6 text-center text-slate-400">今日尚無紀錄</td></tr>';
+      document.getElementById('historyModal').classList.remove('hidden');
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('historyModal').classList.add('hidden');
+      barcodeInput.focus();
+    }
+
+    function deleteTransaction(index) {
+      if (confirm("確定要作廢這筆紀錄嗎？作廢後抽屜應有現金會自動重算。")) {
+        transactions.splice(index, 1);
+        localStorage.setItem('pos_transactions', JSON.stringify(transactions));
+        updateHeaderCash();
+        openHistoryModal();
+      }
+    }
+
+    // 商品管理與改價
+    function openProductModal() {
+      const tbody = document.getElementById('productBody');
+      tbody.innerHTML = Object.entries(products).map(([code, item]) => `
+        <tr>
+          <td class="py-2 font-mono text-slate-500">${code}</td>
+          <td class="py-2">${item.name}</td>
+          <td class="py-2 text-blue-600">$${item.price}</td>
+          <td class="py-2 text-center">
+            <button onclick="editProduct('${code}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-base mr-2">改價/改名</button>
+          </td>
+        </tr>
+      `).join('');
+      document.getElementById('productModal').classList.remove('hidden');
+    }
+
+    function closeProductModal() {
+      document.getElementById('productModal').classList.add('hidden');
+      barcodeInput.focus();
+    }
+
+    function editProduct(code) {
+      const item = products[code];
+      const newName = prompt("修改商品名稱：", item.name);
+      if (!newName) return;
+      const newPrice = Number(prompt(`修改「${newName}」的售價：`, item.price));
+      if (isNaN(newPrice)) return;
+      products[code] = { name: newName, price: newPrice };
+      localStorage.setItem('pos_products', JSON.stringify(products));
+      openProductModal();
+    }
+
+    // 畫面更新
     function renderCart() {
       const tbody = document.getElementById('cartBody');
       tbody.innerHTML = cart.map((item, idx) => `
         <tr>
           <td class="py-3">${item.name}</td>
           <td class="py-3 text-center">$${item.price}</td>
-          <td class="py-3 text-center">x ${item.qty}</td>
+          <td class="py-3 text-center">
+            <button onclick="changeQty(${idx}, -1)" class="bg-slate-200 px-3 py-1 rounded-lg mr-2">-</button>
+            <span>${item.qty}</span>
+            <button onclick="changeQty(${idx}, 1)" class="bg-slate-200 px-3 py-1 rounded-lg ml-2">+</button>
+          </td>
           <td class="py-3 text-right text-blue-700">$${item.price * item.qty}</td>
           <td class="py-3 text-center">
-            <button onclick="removeItem(${idx})" class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-lg">刪除</button>
+            <button onclick="changeQty(${idx}, -999)" class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-lg">刪除</button>
           </td>
         </tr>
       `).join('');
-
-      const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-      document.getElementById('totalAmount').innerText = total;
+      document.getElementById('totalAmount').innerText = getCartTotal();
     }
 
     function updateHeaderCash() {
+      const todaySales = transactions.filter(t => t.type === 'sale').reduce((s, t) => s + t.amount, 0);
+      const todayExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      document.getElementById('openingCash').innerText = `$${openingCash}`;
       document.getElementById('todaySales').innerText = `$${todaySales}`;
       document.getElementById('todayExpense').innerText = `$${todayExpense}`;
       document.getElementById('expectedCash').innerText = `$${openingCash + todaySales - todayExpense}`;
