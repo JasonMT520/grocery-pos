@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>雜貨店收銀台 - A4 護貝條碼桌墊</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入真實條碼產生器 JsBarcode -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; padding: 0 !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 p-8 font-sans">
+
+  <!-- 列印操作提示列（列印時會自動隱藏） -->
+  <div class="no-print max-w-4xl mx-auto mb-6 bg-blue-600 text-white p-5 rounded-2xl shadow-lg flex justify-between items-center">
+    <div>
+      <h1 class="text-2xl font-black">🖨️ 收銀台護貝條碼桌墊（A4 列印頁）</h1>
+      <p class="text-blue-100 mt-1">請點擊右側按鈕印出 A4 紙，護貝後貼在收銀台桌面，長輩即可直接拿刷槍掃描桌面！</p>
+    </div>
+    <button onclick="window.print()" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-black text-xl px-8 py-4 rounded-xl shadow">
+      點此列印 A4 桌墊 (Ctrl+P)
+    </button>
+  </div>
+
+  <!-- A4 桌墊主體 -->
+  <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow border-2 border-slate-300">
+    <h2 class="text-3xl font-black text-center text-slate-800 border-b-4 border-slate-800 pb-4 mb-6">
+      🛒 雜貨店常用無條碼商品 ＆ 快速結帳刷卡區
+    </h2>
+
+    <!-- 第一區：系統動作條碼（直接刷條碼就能結帳或清空） -->
+    <div class="grid grid-cols-2 gap-6 mb-8">
+      <div class="border-4 border-emerald-600 bg-emerald-50 rounded-2xl p-5 flex flex-col items-center">
+        <div class="text-3xl font-black text-emerald-900 mb-1">✅ 剛好收現（直接結帳）</div>
+        <div class="text-lg font-bold text-emerald-700 mb-2">客人給剛好時，刷此條碼直接入帳</div>
+        <svg class="barcode" jsbarcode-value="8888" jsbarcode-height="70" jsbarcode-width="3"></svg>
+      </div>
+
+      <div class="border-4 border-purple-600 bg-purple-50 rounded-2xl p-5 flex flex-col items-center">
+        <div class="text-3xl font-black text-purple-900 mb-1">⚖️ 散裝秤重 / 自訂金額</div>
+        <div class="text-lg font-bold text-purple-700 mb-2">蒜頭、老薑、散裝菜（刷完輸入金額）</div>
+        <svg class="barcode" jsbarcode-value="9999" jsbarcode-height="70" jsbarcode-width="3"></svg>
+      </div>
+    </div>
+
+    <!-- 第二區：常賣無條碼散裝商品 -->
+    <div class="grid grid-cols-2 gap-6">
+      <div class="border-2 border-slate-400 rounded-2xl p-4 flex flex-col items-center">
+        <div class="text-3xl font-black text-slate-800">🥚 散裝雞蛋 (1顆)</div>
+        <div class="text-2xl font-bold text-rose-600 my-1">售價：$7 元</div>
+        <svg class="barcode" jsbarcode-value="1001" jsbarcode-height="65" jsbarcode-width="2.5"></svg>
+      </div>
+
+      <div class="border-2 border-slate-400 rounded-2xl p-4 flex flex-col items-center">
+        <div class="text-3xl font-black text-slate-800">🛍️ 購物塑膠袋</div>
+        <div class="text-2xl font-bold text-rose-600 my-1">售價：$2 元</div>
+        <svg class="barcode" jsbarcode-value="1002" jsbarcode-height="65" jsbarcode-width="2.5"></svg>
+      </div>
+
+      <div class="border-2 border-slate-400 rounded-2xl p-4 flex flex-col items-center">
+        <div class="text-3xl font-black text-slate-800">🍾 退米酒空瓶</div>
+        <div class="text-2xl font-bold text-teal-700 my-1">折抵：扣 $5 元</div>
+        <svg class="barcode" jsbarcode-value="1003" jsbarcode-height="65" jsbarcode-width="2.5"></svg>
+      </div>
+
+      <div class="border-2 border-slate-400 rounded-2xl p-4 flex flex-col items-center">
+        <div class="text-3xl font-black text-slate-800">🍚 散裝白米 (1斤)</div>
+        <div class="text-2xl font-bold text-rose-600 my-1">售價：$28 元</div>
+        <svg class="barcode" jsbarcode-value="1004" jsbarcode-height="65" jsbarcode-width="2.5"></svg>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    JsBarcode(".barcode").init();
+  </script>
+</body>
+</html>

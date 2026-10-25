@@ -3,40 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>雜貨店收銀系統 POS v3.0 (雲端同步版)</title>
+  <title>雜貨店收銀系統 POS v4.0 (正式上線版)</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 引入 Google Firebase 即時資料庫 SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body class="bg-slate-100 h-screen flex flex-col font-sans select-none">
 
   <!-- 頂部金流狀態列 -->
-  <header class="bg-slate-800 text-white px-5 py-3 flex justify-between items-center shadow-md">
-    <div class="flex items-center gap-3">
-      <h1 class="text-2xl font-bold tracking-wider text-yellow-400">雜貨店 POS v3</h1>
+  <header class="bg-slate-800 text-white px-4 py-3 flex justify-between items-center shadow-md">
+    <div class="flex items-center gap-2">
+      <h1 class="text-xl font-bold tracking-wider text-yellow-400 mr-1">雜貨店 POS v4</h1>
       
-      <!-- 雲端同步狀態按鈕 -->
-      <button onclick="openCloudModal()" id="cloudStatusBtn" class="bg-slate-700 hover:bg-slate-600 border border-slate-400 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5">
-        <span id="cloudDot" class="w-3 h-3 rounded-full bg-slate-400 inline-block"></span>
-        <span id="cloudText">單機模式 (點此綁定雲端)</span>
+      <button onclick="openCloudModal()" class="bg-slate-700 hover:bg-slate-600 border border-slate-400 px-2.5 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5">
+        <span id="cloudDot" class="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block"></span>
+        <span id="cloudText">單機模式</span>
       </button>
 
-      <button onclick="openProductModal()" class="bg-slate-700 hover:bg-slate-600 border border-slate-500 px-3 py-1.5 rounded-lg text-base font-bold">
+      <button onclick="openProductModal()" class="bg-slate-700 hover:bg-slate-600 border border-slate-500 px-2.5 py-1.5 rounded-lg text-sm font-bold">
         📦 商品管理
       </button>
-      <button onclick="openHistoryModal()" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-base font-bold shadow">
-        📋 帳務明細 / 打烊結算
+      <button onclick="openHistoryModal()" class="bg-blue-600 hover:bg-blue-500 px-2.5 py-1.5 rounded-lg text-sm font-bold shadow">
+        📋 今日明細 / 打烊
       </button>
+      <button onclick="openLedgerModal()" class="bg-emerald-700 hover:bg-emerald-600 px-2.5 py-1.5 rounded-lg text-sm font-bold shadow">
+        📊 歷日帳本
+      </button>
+      <a href="sheet.html" target="_blank" class="bg-amber-600 hover:bg-amber-500 px-2.5 py-1.5 rounded-lg text-sm font-bold shadow">
+        🖨️ 印條碼桌墊
+      </a>
     </div>
 
-    <div class="flex items-center gap-5 text-lg">
+    <div class="flex items-center gap-4 text-base">
       <div class="cursor-pointer hover:underline" onclick="setOpeningCash()" title="點擊修改準備金">
         準備金: <span id="openingCash" class="font-bold text-slate-200">$5000</span> ✎
       </div>
       <div>今日營收: <span id="todaySales" class="font-bold text-emerald-400">$0</span></div>
-      <div>付貨款支出: <span id="todayExpense" class="font-bold text-rose-400">$0</span></div>
-      <div class="bg-slate-900 px-4 py-1.5 rounded-xl border-2 border-yellow-400">
+      <div>付貨款: <span id="todayExpense" class="font-bold text-rose-400">$0</span></div>
+      <div class="bg-slate-900 px-3 py-1 rounded-xl border-2 border-yellow-400">
         抽屜應有現金: <span id="expectedCash" class="font-extrabold text-yellow-300 text-2xl">$5000</span>
       </div>
     </div>
@@ -44,20 +48,18 @@
 
   <!-- 主畫面 -->
   <main class="flex-1 flex overflow-hidden p-4 gap-4">
-    
     <!-- 左半部：刷槍輸入區 + 購物車明細 + 結帳區 -->
     <section class="w-7/12 bg-white rounded-2xl shadow-lg flex flex-col p-5 border border-slate-200">
       <div class="flex gap-3 mb-3">
         <input 
           id="barcodeInput" 
           type="text" 
-          placeholder="請直接拿刷槍掃描商品（或輸入條碼按 Enter）..." 
+          placeholder="請直接拿刷槍掃描商品（自動防注音亂碼）..." 
           class="flex-1 border-4 border-blue-500 rounded-xl px-4 py-3 text-2xl font-bold focus:outline-none focus:ring-4 focus:ring-blue-200"
           autofocus
         />
       </div>
 
-      <!-- 購物清單表格 -->
       <div class="flex-1 overflow-y-auto border-t border-b border-slate-200 my-1">
         <table class="w-full text-left border-collapse">
           <thead>
@@ -73,7 +75,6 @@
         </table>
       </div>
 
-      <!-- 底部總金額與結帳按鈕 -->
       <div class="pt-3 flex justify-between items-center">
         <div>
           <div class="text-slate-500 text-lg font-bold">應收總金額</div>
@@ -122,7 +123,6 @@
         </div>
       </div>
 
-      <!-- 櫃檯現金支出登記 -->
       <div class="bg-rose-50 rounded-2xl shadow-lg p-5 border-2 border-rose-200">
         <h2 class="text-xl font-bold text-rose-800 mb-2">櫃檯現金支出（廠商送貨付現 / 臨時支出）</h2>
         <button onclick="recordExpense()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black text-2xl py-4 rounded-xl shadow">
@@ -140,7 +140,6 @@
         <span class="text-2xl font-bold text-slate-600">應收總金額：</span>
         <span class="text-5xl font-black text-rose-600">$<span id="modalTotal">0</span></span>
       </div>
-
       <div class="mb-4">
         <div class="text-xl font-bold text-slate-600 mb-2">客人付多少錢？（點選自動算找零）：</div>
         <div class="grid grid-cols-4 gap-3 mb-3">
@@ -151,12 +150,10 @@
         </div>
         <input id="receivedInput" type="number" oninput="calculateChange()" placeholder="或手動輸入客人給的金額..." class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-2xl font-bold" />
       </div>
-
       <div class="flex justify-between items-center bg-yellow-50 border-2 border-yellow-400 p-4 rounded-2xl mb-6">
         <span class="text-2xl font-bold text-slate-700">應找零錢：</span>
         <span id="changeAmount" class="text-6xl font-black text-emerald-700">$0</span>
       </div>
-
       <div class="flex gap-4">
         <button onclick="closeCheckoutModal()" class="w-1/3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-2xl py-4 rounded-xl">返回修改</button>
         <button onclick="confirmCheckout()" class="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-3xl py-4 rounded-xl shadow-lg">確認收錢入帳 (Enter)</button>
@@ -168,12 +165,12 @@
   <div id="historyModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
     <div class="bg-white rounded-3xl p-6 w-[850px] max-h-[85vh] flex flex-col shadow-2xl">
       <div class="flex justify-between items-center border-b pb-4 mb-4">
-        <h3 class="text-2xl font-black text-slate-800">📋 交易與櫃檯支出明細</h3>
+        <h3 class="text-2xl font-black text-slate-800">📋 今日交易與櫃檯支出明細</h3>
         <div class="flex gap-3">
           <button onclick="dailyCloseOut()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold text-lg shadow">
-            🌙 今日打烊結算 (清空今日流水帳)
+            🌙 今日打烊結算 (封存至歷日帳本)
           </button>
-          <button onclick="closeHistoryModal()" class="bg-slate-200 px-4 py-2 rounded-lg font-bold text-lg">關閉視窗</button>
+          <button onclick="closeHistoryModal()" class="bg-slate-200 px-4 py-2 rounded-lg font-bold text-lg">關閉</button>
         </div>
       </div>
       <div class="flex-1 overflow-y-auto">
@@ -193,12 +190,41 @@
     </div>
   </div>
 
-  <!-- 視窗 3：商品建檔管理與改價 -->
+  <!-- 視窗 3：歷日營收日結帳本 + 匯出 Excel -->
+  <div id="ledgerModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-white rounded-3xl p-6 w-[850px] max-h-[85vh] flex flex-col shadow-2xl">
+      <div class="flex justify-between items-center border-b pb-4 mb-4">
+        <h3 class="text-2xl font-black text-slate-800">📊 歷日打烊結算帳本</h3>
+        <div class="flex gap-3">
+          <button onclick="exportLedgerCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold text-lg shadow">
+            📥 下載 Excel (CSV) 報表
+          </button>
+          <button onclick="closeLedgerModal()" class="bg-slate-200 px-4 py-2 rounded-lg font-bold text-lg">關閉</button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b-2 border-slate-300 text-slate-500 text-lg">
+              <th class="py-2">結算日期時間</th>
+              <th class="py-2 text-right">開店準備金</th>
+              <th class="py-2 text-right">當日總營收</th>
+              <th class="py-2 text-right">付貨款支出</th>
+              <th class="py-2 text-right">抽屜應有現金</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerBody" class="text-xl font-bold divide-y divide-slate-200"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 視窗 4：商品建檔管理與改價 -->
   <div id="productModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
     <div class="bg-white rounded-3xl p-6 w-[750px] max-h-[85vh] flex flex-col shadow-2xl">
       <div class="flex justify-between items-center border-b pb-4 mb-4">
-        <h3 class="text-2xl font-black text-slate-800">📦 已建檔商品管理（修改會自動同步至雲端）</h3>
-        <button onclick="closeProductModal()" class="bg-slate-200 px-4 py-2 rounded-lg font-bold text-lg">關閉視窗</button>
+        <h3 class="text-2xl font-black text-slate-800">📦 已建檔商品管理</h3>
+        <button onclick="closeProductModal()" class="bg-slate-200 px-4 py-2 rounded-lg font-bold text-lg">關閉</button>
       </div>
       <div class="flex-1 overflow-y-auto">
         <table class="w-full text-left border-collapse">
@@ -216,12 +242,12 @@
     </div>
   </div>
 
-  <!-- 視窗 4：雲端資料庫綁定設定 -->
+  <!-- 視窗 5：雲端資料庫綁定設定 -->
   <div id="cloudModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
     <div class="bg-white rounded-3xl p-8 w-[650px] shadow-2xl border-4 border-blue-500">
       <h3 class="text-2xl font-black text-slate-800 mb-2">☁️ 綁定 Google Firebase 雲端資料庫</h3>
       <p class="text-slate-600 text-base mb-4">
-        貼上你的 Firebase Realtime Database 網址後，店內筆電與老闆手機就能即時同步商品與每日現金帳務（網址只會保存在這台設備的瀏覽器中，不會外洩到 GitHub）。
+        貼上你的 Firebase Realtime Database 網址後，店內筆電與老闆手機就能即時同步商品、每日現金帳務與歷日帳本。
       </p>
       <input 
         id="firebaseUrlInput" 
@@ -255,7 +281,18 @@
       osc.stop(audioCtx.currentTime + duration);
     }
 
-    // 2. 預設商品與本機資料載入
+    // 2. 台灣微軟注音輸入法防呆轉換器（將誤刷出的注音符號自動還原為數字 0-9）
+    const bopomofoMap = {
+      'ㄅ': '1', 'ㄉ': '2', 'ˇ': '3', 'ˋ': '4', 'ㄓ': '5',
+      'ˊ': '6', '˙': '7', 'ㄚ': '8', 'ㄞ': '9', 'ㄢ': '0',
+      '１': '1', '２': '2', '３': '3', '４': '4', '５': '5',
+      '６': '6', '７': '7', '８': '8', '９': '9', '０': '0'
+    };
+    function normalizeBarcode(raw) {
+      return raw.split('').map(ch => bopomofoMap[ch] || ch).join('').replace(/[^a-zA-Z0-9]/g, '');
+    }
+
+    // 3. 預設資料載入
     const defaultProducts = {
       "1001": { name: "散裝雞蛋(1顆)", price: 7 },
       "1002": { name: "購物塑膠袋", price: 2 },
@@ -267,10 +304,11 @@
 
     let products = JSON.parse(localStorage.getItem('pos_products')) || defaultProducts;
     let transactions = JSON.parse(localStorage.getItem('pos_transactions')) || [];
+    let dailyRecords = JSON.parse(localStorage.getItem('pos_dailyRecords')) || [];
     let openingCash = Number(localStorage.getItem('pos_openingCash')) || 5000;
     let cart = [];
 
-    // 3. Firebase 雲端即時同步引擎
+    // 4. Firebase 雲端同步引擎
     let dbRef = null;
     let savedFirebaseUrl = localStorage.getItem('pos_firebase_url') || '';
 
@@ -285,46 +323,42 @@
         }
         dbRef = firebase.database().ref('grocery_store_pos');
 
-        // 監聽雲端資料變化（當店裡結帳或手機改價時，所有設備自動同步）
         dbRef.on('value', (snapshot) => {
           const cloudData = snapshot.val();
           if (cloudData) {
             if (cloudData.products) products = cloudData.products;
             transactions = cloudData.transactions || [];
+            dailyRecords = cloudData.dailyRecords || [];
             if (cloudData.openingCash !== undefined) openingCash = cloudData.openingCash;
 
-            // 同步備份回本機 localStorage
             localStorage.setItem('pos_products', JSON.stringify(products));
             localStorage.setItem('pos_transactions', JSON.stringify(transactions));
+            localStorage.setItem('pos_dailyRecords', JSON.stringify(dailyRecords));
             localStorage.setItem('pos_openingCash', openingCash);
             updateHeaderCash();
           } else {
-            // 若雲端還是空的，將目前本機資料推上雲端初始化
             syncToCloud();
           }
           updateCloudUI(true);
-        }, (error) => {
-          console.error("雲端連線錯誤:", error);
-          updateCloudUI(false);
-        });
+        }, () => updateCloudUI(false));
       } catch (err) {
-        console.error("初始化失敗:", err);
         updateCloudUI(false);
       }
     }
 
-    // 將最新資料寫入本機與雲端
     function syncToCloud() {
       localStorage.setItem('pos_products', JSON.stringify(products));
       localStorage.setItem('pos_transactions', JSON.stringify(transactions));
+      localStorage.setItem('pos_dailyRecords', JSON.stringify(dailyRecords));
       localStorage.setItem('pos_openingCash', openingCash);
       updateHeaderCash();
 
       if (dbRef) {
         dbRef.set({
-          products: products,
-          transactions: transactions,
-          openingCash: openingCash,
+          products,
+          transactions,
+          dailyRecords,
+          openingCash,
           lastUpdated: new Date().toISOString()
         });
       }
@@ -334,11 +368,11 @@
       const dot = document.getElementById('cloudDot');
       const text = document.getElementById('cloudText');
       if (isConnected) {
-        dot.className = "w-3 h-3 rounded-full bg-emerald-400 inline-block animate-pulse";
-        text.innerText = "雲端即時同步中";
+        dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block animate-pulse";
+        text.innerText = "雲端同步中";
       } else {
-        dot.className = "w-3 h-3 rounded-full bg-slate-400 inline-block";
-        text.innerText = "單機模式 (點此綁定雲端)";
+        dot.className = "w-2.5 h-2.5 rounded-full bg-slate-400 inline-block";
+        text.innerText = "單機模式";
       }
     }
 
@@ -346,45 +380,36 @@
       document.getElementById('firebaseUrlInput').value = savedFirebaseUrl;
       document.getElementById('cloudModal').classList.remove('hidden');
     }
-
     function closeCloudModal() {
       document.getElementById('cloudModal').classList.add('hidden');
       barcodeInput.focus();
     }
-
     function saveCloudConfig() {
       const url = document.getElementById('firebaseUrlInput').value.trim();
-      if (!url.startsWith('https://')) {
-        alert("請輸入正確的 https:// 開頭 Firebase 資料庫網址！");
-        return;
-      }
+      if (!url.startsWith('https://')) return alert("請輸入 https:// 開頭的 Firebase 資料庫網址！");
       localStorage.setItem('pos_firebase_url', url);
-      location.reload(); // 重新載入以啟動雲端連線
+      location.reload();
     }
-
     function disconnectCloud() {
       localStorage.removeItem('pos_firebase_url');
       location.reload();
     }
 
-    // 4. 刷槍與收銀核心邏輯
+    // 5. 刷槍監聽與收銀邏輯
     const barcodeInput = document.getElementById('barcodeInput');
 
     document.addEventListener('click', (e) => {
-      const isModalOpen = !document.getElementById('checkoutModal').classList.contains('hidden') ||
-                          !document.getElementById('historyModal').classList.contains('hidden') ||
-                          !document.getElementById('productModal').classList.contains('hidden') ||
-                          !document.getElementById('cloudModal').classList.contains('hidden');
-      if (!isModalOpen && e.target.tagName !== 'INPUT') {
-        barcodeInput.focus();
-      }
+      const modals = ['checkoutModal', 'historyModal', 'ledgerModal', 'productModal', 'cloudModal'];
+      const anyOpen = modals.some(id => !document.getElementById(id).classList.contains('hidden'));
+      if (!anyOpen && e.target.tagName !== 'INPUT') barcodeInput.focus();
     });
 
     barcodeInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        const code = barcodeInput.value.trim();
+        const raw = barcodeInput.value.trim();
         barcodeInput.value = '';
+        const code = normalizeBarcode(raw);
         if (code) handleBarcode(code);
       } else if (e.key === ' ' && barcodeInput.value === '') {
         e.preventDefault();
@@ -393,6 +418,12 @@
     });
 
     function handleBarcode(code) {
+      // 桌墊條碼 8888：直接剛好收現結帳
+      if (code === '8888') {
+        if (cart.length > 0) confirmCheckout();
+        return;
+      }
+      // 桌墊條碼 9999：萬用自訂金額
       if (code === '9999') {
         playBeep(1000, 0.1);
         addCustomPriceItem('自訂金額商品');
@@ -404,7 +435,7 @@
       } else {
         playBeep(350, 0.25, 'square');
         setTimeout(() => {
-          const name = prompt(`發現新商品條碼 [${code}]！\n請輸入商品名稱（輸入完直接同步至雲端）：`);
+          const name = prompt(`發現新商品條碼 [${code}]！\n請輸入商品名稱（自動建檔同步雲端）：`);
           if (!name) return;
           const price = Number(prompt(`請輸入「${name}」的售價（元）：`));
           if (isNaN(price)) return;
@@ -420,11 +451,8 @@
     function addQuickItem(name, price) {
       playBeep(1400, 0.06);
       const existing = cart.find(item => item.name === name && item.price === price);
-      if (existing) {
-        existing.qty += 1;
-      } else {
-        cart.push({ name, price, qty: 1 });
-      }
+      if (existing) existing.qty += 1;
+      else cart.push({ name, price, qty: 1 });
       renderCart();
       barcodeInput.focus();
     }
@@ -437,9 +465,7 @@
 
     function addCustomPriceItem(defaultLabel) {
       const price = Number(prompt(`請輸入「${defaultLabel}」的總金額（元）：`));
-      if (!isNaN(price) && price !== 0) {
-        addQuickItem(defaultLabel, price);
-      }
+      if (!isNaN(price) && price !== 0) addQuickItem(defaultLabel, price);
       barcodeInput.focus();
     }
 
@@ -529,6 +555,7 @@
       }
     }
 
+    // 今日明細與打烊日結封存
     function openHistoryModal() {
       const tbody = document.getElementById('historyBody');
       tbody.innerHTML = transactions.map((t, idx) => `
@@ -557,14 +584,13 @@
     }
 
     function deleteTransaction(index) {
-      if (confirm("確定要作廢這筆紀錄嗎？作廢後雲端與抽屜現金會自動重算。")) {
+      if (confirm("確定要作廢這筆紀錄嗎？")) {
         transactions.splice(index, 1);
         syncToCloud();
         openHistoryModal();
       }
     }
 
-    // 每日打烊結算清零
     function dailyCloseOut() {
       const todaySales = transactions.filter(t => t.type === 'sale').reduce((s, t) => s + t.amount, 0);
       const todayExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
@@ -575,15 +601,57 @@
                   `・今日總營收：+$${todaySales}\n` +
                   `・付貨款支出：-$${todayExpense}\n` +
                   `----------------------\n` +
-                  `👉 抽屜現在應有現金：$${expected}\n\n` +
-                  `確認點鈔無誤後，要清空今日流水帳（為明天開店做準備）嗎？`;
+                  `👉 抽屜應有現金：$${expected}\n\n` +
+                  `按「確定」後，將把今日總帳存入【📊 歷日帳本】，並將今日流水帳歸零！`;
       if (confirm(msg)) {
+        dailyRecords.unshift({
+          date: new Date().toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
+          openingCash,
+          todaySales,
+          todayExpense,
+          expectedCash: expected
+        });
         transactions = [];
         syncToCloud();
-        openHistoryModal();
+        closeHistoryModal();
+        openLedgerModal();
       }
     }
 
+    // 歷日帳本與 CSV 匯出
+    function openLedgerModal() {
+      const tbody = document.getElementById('ledgerBody');
+      tbody.innerHTML = dailyRecords.map(r => `
+        <tr>
+          <td class="py-3 text-slate-600">${r.date}</td>
+          <td class="py-3 text-right">$${r.openingCash}</td>
+          <td class="py-3 text-right text-emerald-600">+$${r.todaySales}</td>
+          <td class="py-3 text-right text-rose-600">-$${r.todayExpense}</td>
+          <td class="py-3 text-right text-blue-700 font-black">$${r.expectedCash}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" class="py-6 text-center text-slate-400">尚無歷日打烊結算紀錄</td></tr>';
+      document.getElementById('ledgerModal').classList.remove('hidden');
+    }
+
+    function closeLedgerModal() {
+      document.getElementById('ledgerModal').classList.add('hidden');
+      barcodeInput.focus();
+    }
+
+    function exportLedgerCSV() {
+      if (dailyRecords.length === 0) return alert("目前還沒有歷日結算紀錄可匯出！");
+      let csv = "\uFEFF結算日期時間,開店準備金,當日總營收,付貨款支出,抽屜應有現金\n";
+      dailyRecords.forEach(r => {
+        csv += `"${r.date}",${r.openingCash},${r.todaySales},${r.todayExpense},${r.expectedCash}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `雜貨店日結帳本_${new Date().toISOString().slice(0,10)}.csv`;
+      link.click();
+    }
+
+    // 商品管理
     function openProductModal() {
       const tbody = document.getElementById('productBody');
       tbody.innerHTML = Object.entries(products).map(([code, item]) => `
@@ -644,11 +712,8 @@
       document.getElementById('expectedCash').innerText = `$${openingCash + todaySales - todayExpense}`;
     }
 
-    // 啟動時先呈現本機資料，若已設定過雲端網址則自動連線
     updateHeaderCash();
-    if (savedFirebaseUrl) {
-      initCloudSync(savedFirebaseUrl);
-    }
+    if (savedFirebaseUrl) initCloudSync(savedFirebaseUrl);
   </script>
 </body>
 </html>
