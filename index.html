@@ -3,20 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>雜貨店收銀系統 POS v2.0</title>
+  <title>雜貨店收銀系統 POS v3.0 (雲端同步版)</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入 Google Firebase 即時資料庫 SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body class="bg-slate-100 h-screen flex flex-col font-sans select-none">
 
   <!-- 頂部金流狀態列 -->
-  <header class="bg-slate-800 text-white px-6 py-3 flex justify-between items-center shadow-md">
-    <div class="flex items-center gap-4">
-      <h1 class="text-2xl font-bold tracking-wider text-yellow-400">雜貨店收銀系統 v2</h1>
+  <header class="bg-slate-800 text-white px-5 py-3 flex justify-between items-center shadow-md">
+    <div class="flex items-center gap-3">
+      <h1 class="text-2xl font-bold tracking-wider text-yellow-400">雜貨店 POS v3</h1>
+      
+      <!-- 雲端同步狀態按鈕 -->
+      <button onclick="openCloudModal()" id="cloudStatusBtn" class="bg-slate-700 hover:bg-slate-600 border border-slate-400 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5">
+        <span id="cloudDot" class="w-3 h-3 rounded-full bg-slate-400 inline-block"></span>
+        <span id="cloudText">單機模式 (點此綁定雲端)</span>
+      </button>
+
       <button onclick="openProductModal()" class="bg-slate-700 hover:bg-slate-600 border border-slate-500 px-3 py-1.5 rounded-lg text-base font-bold">
-        📦 商品管理 / 改價
+        📦 商品管理
       </button>
       <button onclick="openHistoryModal()" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-base font-bold shadow">
-        📋 今日帳務明細 / 作廢
+        📋 帳務明細 / 打烊結算
       </button>
     </div>
 
@@ -154,12 +164,17 @@
     </div>
   </div>
 
-  <!-- 視窗 2：今日金流流水帳明細 -->
+  <!-- 視窗 2：今日金流流水帳明細 + 打烊日結 -->
   <div id="historyModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div class="bg-white rounded-3xl p-6 w-[800px] max-h-[85vh] flex flex-col shadow-2xl">
+    <div class="bg-white rounded-3xl p-6 w-[850px] max-h-[85vh] flex flex-col shadow-2xl">
       <div class="flex justify-between items-center border-b pb-4 mb-4">
-        <h3 class="text-2xl font-black text-slate-800">📋 今日交易與櫃檯支出明細</h3>
-        <button onclick="closeHistoryModal()" class="bg-slate-200 px-4 py-2 rounded-lg font-bold text-lg">關閉視窗</button>
+        <h3 class="text-2xl font-black text-slate-800">📋 交易與櫃檯支出明細</h3>
+        <div class="flex gap-3">
+          <button onclick="dailyCloseOut()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold text-lg shadow">
+            🌙 今日打烊結算 (清空今日流水帳)
+          </button>
+          <button onclick="closeHistoryModal()" class="bg-slate-200 px-4 py-2 rounded-lg font-bold text-lg">關閉視窗</button>
+        </div>
       </div>
       <div class="flex-1 overflow-y-auto">
         <table class="w-full text-left border-collapse">
@@ -182,7 +197,7 @@
   <div id="productModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
     <div class="bg-white rounded-3xl p-6 w-[750px] max-h-[85vh] flex flex-col shadow-2xl">
       <div class="flex justify-between items-center border-b pb-4 mb-4">
-        <h3 class="text-2xl font-black text-slate-800">📦 已建檔商品管理（可直接修改售價）</h3>
+        <h3 class="text-2xl font-black text-slate-800">📦 已建檔商品管理（修改會自動同步至雲端）</h3>
         <button onclick="closeProductModal()" class="bg-slate-200 px-4 py-2 rounded-lg font-bold text-lg">關閉視窗</button>
       </div>
       <div class="flex-1 overflow-y-auto">
@@ -201,8 +216,31 @@
     </div>
   </div>
 
+  <!-- 視窗 4：雲端資料庫綁定設定 -->
+  <div id="cloudModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-white rounded-3xl p-8 w-[650px] shadow-2xl border-4 border-blue-500">
+      <h3 class="text-2xl font-black text-slate-800 mb-2">☁️ 綁定 Google Firebase 雲端資料庫</h3>
+      <p class="text-slate-600 text-base mb-4">
+        貼上你的 Firebase Realtime Database 網址後，店內筆電與老闆手機就能即時同步商品與每日現金帳務（網址只會保存在這台設備的瀏覽器中，不會外洩到 GitHub）。
+      </p>
+      <input 
+        id="firebaseUrlInput" 
+        type="text" 
+        placeholder="例如: https://grocery-pos-xxxx.asia-southeast1.firebasedatabase.app/" 
+        class="w-full border-2 border-slate-300 rounded-xl px-4 py-3 text-lg font-mono mb-6 focus:border-blue-500 focus:outline-none"
+      />
+      <div class="flex justify-between gap-4">
+        <button onclick="disconnectCloud()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-lg px-5 py-3 rounded-xl">解除綁定</button>
+        <div class="flex gap-3">
+          <button onclick="closeCloudModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-lg px-6 py-3 rounded-xl">取消</button>
+          <button onclick="saveCloudConfig()" class="bg-blue-600 hover:bg-blue-700 text-white font-black text-xl px-8 py-3 rounded-xl shadow">儲存並連線同步</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // 1. 內建音效合成器（免外接音檔，直接發出刷槍嗶聲）
+    // 1. 內建刷槍音效合成器
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeep(freq = 1200, duration = 0.08, type = 'sine') {
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -217,7 +255,7 @@
       osc.stop(audioCtx.currentTime + duration);
     }
 
-    // 2. 初始資料載入
+    // 2. 預設商品與本機資料載入
     const defaultProducts = {
       "1001": { name: "散裝雞蛋(1顆)", price: 7 },
       "1002": { name: "購物塑膠袋", price: 2 },
@@ -232,19 +270,116 @@
     let openingCash = Number(localStorage.getItem('pos_openingCash')) || 5000;
     let cart = [];
 
+    // 3. Firebase 雲端即時同步引擎
+    let dbRef = null;
+    let savedFirebaseUrl = localStorage.getItem('pos_firebase_url') || '';
+
+    function initCloudSync(url) {
+      if (!url || !url.startsWith('https://')) {
+        updateCloudUI(false);
+        return;
+      }
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp({ databaseURL: url.trim() });
+        }
+        dbRef = firebase.database().ref('grocery_store_pos');
+
+        // 監聽雲端資料變化（當店裡結帳或手機改價時，所有設備自動同步）
+        dbRef.on('value', (snapshot) => {
+          const cloudData = snapshot.val();
+          if (cloudData) {
+            if (cloudData.products) products = cloudData.products;
+            transactions = cloudData.transactions || [];
+            if (cloudData.openingCash !== undefined) openingCash = cloudData.openingCash;
+
+            // 同步備份回本機 localStorage
+            localStorage.setItem('pos_products', JSON.stringify(products));
+            localStorage.setItem('pos_transactions', JSON.stringify(transactions));
+            localStorage.setItem('pos_openingCash', openingCash);
+            updateHeaderCash();
+          } else {
+            // 若雲端還是空的，將目前本機資料推上雲端初始化
+            syncToCloud();
+          }
+          updateCloudUI(true);
+        }, (error) => {
+          console.error("雲端連線錯誤:", error);
+          updateCloudUI(false);
+        });
+      } catch (err) {
+        console.error("初始化失敗:", err);
+        updateCloudUI(false);
+      }
+    }
+
+    // 將最新資料寫入本機與雲端
+    function syncToCloud() {
+      localStorage.setItem('pos_products', JSON.stringify(products));
+      localStorage.setItem('pos_transactions', JSON.stringify(transactions));
+      localStorage.setItem('pos_openingCash', openingCash);
+      updateHeaderCash();
+
+      if (dbRef) {
+        dbRef.set({
+          products: products,
+          transactions: transactions,
+          openingCash: openingCash,
+          lastUpdated: new Date().toISOString()
+        });
+      }
+    }
+
+    function updateCloudUI(isConnected) {
+      const dot = document.getElementById('cloudDot');
+      const text = document.getElementById('cloudText');
+      if (isConnected) {
+        dot.className = "w-3 h-3 rounded-full bg-emerald-400 inline-block animate-pulse";
+        text.innerText = "雲端即時同步中";
+      } else {
+        dot.className = "w-3 h-3 rounded-full bg-slate-400 inline-block";
+        text.innerText = "單機模式 (點此綁定雲端)";
+      }
+    }
+
+    function openCloudModal() {
+      document.getElementById('firebaseUrlInput').value = savedFirebaseUrl;
+      document.getElementById('cloudModal').classList.remove('hidden');
+    }
+
+    function closeCloudModal() {
+      document.getElementById('cloudModal').classList.add('hidden');
+      barcodeInput.focus();
+    }
+
+    function saveCloudConfig() {
+      const url = document.getElementById('firebaseUrlInput').value.trim();
+      if (!url.startsWith('https://')) {
+        alert("請輸入正確的 https:// 開頭 Firebase 資料庫網址！");
+        return;
+      }
+      localStorage.setItem('pos_firebase_url', url);
+      location.reload(); // 重新載入以啟動雲端連線
+    }
+
+    function disconnectCloud() {
+      localStorage.removeItem('pos_firebase_url');
+      location.reload();
+    }
+
+    // 4. 刷槍與收銀核心邏輯
     const barcodeInput = document.getElementById('barcodeInput');
 
-    // 確保在主畫面時，游標自動回到刷槍輸入框
     document.addEventListener('click', (e) => {
       const isModalOpen = !document.getElementById('checkoutModal').classList.contains('hidden') ||
                           !document.getElementById('historyModal').classList.contains('hidden') ||
-                          !document.getElementById('productModal').classList.contains('hidden');
+                          !document.getElementById('productModal').classList.contains('hidden') ||
+                          !document.getElementById('cloudModal').classList.contains('hidden');
       if (!isModalOpen && e.target.tagName !== 'INPUT') {
         barcodeInput.focus();
       }
     });
 
-    // 監聽刷槍與鍵盤快捷鍵
     barcodeInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -257,7 +392,6 @@
       }
     });
 
-    // 處理刷到的條碼
     function handleBarcode(code) {
       if (code === '9999') {
         playBeep(1000, 0.1);
@@ -265,25 +399,24 @@
         return;
       }
       if (products[code]) {
-        playBeep(1400, 0.08); // 成功高音嗶聲
+        playBeep(1400, 0.08);
         addQuickItem(products[code].name, products[code].price);
       } else {
-        playBeep(350, 0.25, 'square'); // 未知商品低音提示
+        playBeep(350, 0.25, 'square');
         setTimeout(() => {
-          const name = prompt(`發現新商品條碼 [${code}]！\n請輸入商品名稱（輸入完直接建檔並入單）：`);
+          const name = prompt(`發現新商品條碼 [${code}]！\n請輸入商品名稱（輸入完直接同步至雲端）：`);
           if (!name) return;
           const price = Number(prompt(`請輸入「${name}」的售價（元）：`));
           if (isNaN(price)) return;
 
           products[code] = { name, price };
-          localStorage.setItem('pos_products', JSON.stringify(products));
+          syncToCloud();
           playBeep(1400, 0.08);
           addQuickItem(name, price);
         }, 50);
       }
     }
 
-    // 加入購物車與增減數量
     function addQuickItem(name, price) {
       playBeep(1400, 0.06);
       const existing = cart.find(item => item.name === name && item.price === price);
@@ -316,7 +449,6 @@
       barcodeInput.focus();
     }
 
-    // 結帳與找零視窗邏輯
     function getCartTotal() {
       return cart.reduce((sum, item) => sum + item.price * item.qty, 0);
     }
@@ -355,26 +487,23 @@
       const summary = cart.map(i => `${i.name}x${i.qty}`).join(', ');
       transactions.unshift({
         id: Date.now(),
-        time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+        time: new Date().toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
         type: 'sale',
         note: summary,
         amount: total
       });
-      localStorage.setItem('pos_transactions', JSON.stringify(transactions));
       playBeep(1600, 0.15);
       cart = [];
       renderCart();
-      updateHeaderCash();
+      syncToCloud();
       closeCheckoutModal();
     }
 
-    // 支援在找零視窗直接按 Enter 完成結帳
     document.getElementById('receivedInput').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') confirmCheckout();
       if (e.key === 'Escape') closeCheckoutModal();
     });
 
-    // 登記櫃檯付貨款支出
     function recordExpense() {
       const note = prompt("請輸入支出原因或廠商名稱（例如：雞蛋商貨款、買便當）：");
       if (!note) return;
@@ -382,33 +511,29 @@
       if (!isNaN(amount) && amount > 0) {
         transactions.unshift({
           id: Date.now(),
-          time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+          time: new Date().toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
           type: 'expense',
           note: note,
           amount: amount
         });
-        localStorage.setItem('pos_transactions', JSON.stringify(transactions));
-        updateHeaderCash();
+        syncToCloud();
       }
       barcodeInput.focus();
     }
 
-    // 修改開店準備金
     function setOpeningCash() {
       const val = Number(prompt("請輸入今日開店抽屜準備金（元）：", openingCash));
       if (!isNaN(val) && val >= 0) {
         openingCash = val;
-        localStorage.setItem('pos_openingCash', openingCash);
-        updateHeaderCash();
+        syncToCloud();
       }
     }
 
-    // 歷史明細與單筆作廢
     function openHistoryModal() {
       const tbody = document.getElementById('historyBody');
       tbody.innerHTML = transactions.map((t, idx) => `
         <tr class="${t.type === 'expense' ? 'bg-rose-50' : ''}">
-          <td class="py-3 text-slate-500">${t.time}</td>
+          <td class="py-3 text-slate-500 text-base">${t.time}</td>
           <td class="py-3">
             <span class="px-2 py-1 rounded text-base ${t.type === 'sale' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-200 text-rose-900'}">
               ${t.type === 'sale' ? '收銀入帳' : '付貨款支出'}
@@ -419,10 +544,10 @@
             ${t.type === 'sale' ? '+' : '-'}$${t.amount}
           </td>
           <td class="py-3 text-center">
-            <button onclick="deleteTransaction(${idx})" class="bg-slate-200 hover:bg-red-500 hover:text-white text-slate-700 px-3 py-1 rounded-lg text-base">作廢刪單</button>
+            <button onclick="deleteTransaction(${idx})" class="bg-slate-200 hover:bg-red-500 hover:text-white text-slate-700 px-3 py-1 rounded-lg text-base">作廢</button>
           </td>
         </tr>
-      `).join('') || '<tr><td colspan="5" class="py-6 text-center text-slate-400">今日尚無紀錄</td></tr>';
+      `).join('') || '<tr><td colspan="5" class="py-6 text-center text-slate-400">目前尚無交易紀錄</td></tr>';
       document.getElementById('historyModal').classList.remove('hidden');
     }
 
@@ -432,15 +557,33 @@
     }
 
     function deleteTransaction(index) {
-      if (confirm("確定要作廢這筆紀錄嗎？作廢後抽屜應有現金會自動重算。")) {
+      if (confirm("確定要作廢這筆紀錄嗎？作廢後雲端與抽屜現金會自動重算。")) {
         transactions.splice(index, 1);
-        localStorage.setItem('pos_transactions', JSON.stringify(transactions));
-        updateHeaderCash();
+        syncToCloud();
         openHistoryModal();
       }
     }
 
-    // 商品管理與改價
+    // 每日打烊結算清零
+    function dailyCloseOut() {
+      const todaySales = transactions.filter(t => t.type === 'sale').reduce((s, t) => s + t.amount, 0);
+      const todayExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      const expected = openingCash + todaySales - todayExpense;
+
+      const msg = `【今日打烊點鈔核對】\n` +
+                  `・開店準備金：$${openingCash}\n` +
+                  `・今日總營收：+$${todaySales}\n` +
+                  `・付貨款支出：-$${todayExpense}\n` +
+                  `----------------------\n` +
+                  `👉 抽屜現在應有現金：$${expected}\n\n` +
+                  `確認點鈔無誤後，要清空今日流水帳（為明天開店做準備）嗎？`;
+      if (confirm(msg)) {
+        transactions = [];
+        syncToCloud();
+        openHistoryModal();
+      }
+    }
+
     function openProductModal() {
       const tbody = document.getElementById('productBody');
       tbody.innerHTML = Object.entries(products).map(([code, item]) => `
@@ -449,7 +592,7 @@
           <td class="py-2">${item.name}</td>
           <td class="py-2 text-blue-600">$${item.price}</td>
           <td class="py-2 text-center">
-            <button onclick="editProduct('${code}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-base mr-2">改價/改名</button>
+            <button onclick="editProduct('${code}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-base">改價/改名</button>
           </td>
         </tr>
       `).join('');
@@ -468,11 +611,10 @@
       const newPrice = Number(prompt(`修改「${newName}」的售價：`, item.price));
       if (isNaN(newPrice)) return;
       products[code] = { name: newName, price: newPrice };
-      localStorage.setItem('pos_products', JSON.stringify(products));
+      syncToCloud();
       openProductModal();
     }
 
-    // 畫面更新
     function renderCart() {
       const tbody = document.getElementById('cartBody');
       tbody.innerHTML = cart.map((item, idx) => `
@@ -502,7 +644,11 @@
       document.getElementById('expectedCash').innerText = `$${openingCash + todaySales - todayExpense}`;
     }
 
+    // 啟動時先呈現本機資料，若已設定過雲端網址則自動連線
     updateHeaderCash();
+    if (savedFirebaseUrl) {
+      initCloudSync(savedFirebaseUrl);
+    }
   </script>
 </body>
 </html>
